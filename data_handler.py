@@ -2,7 +2,8 @@
 DataHandler.py
 
 This module contains the DataHandler class, which is responsible for loading and preprocessing audio data and
-metadata for the SEP-28k dataset.
+metadata for the SEP-28k dataset. The class provides functionality to read audio files, process audio clips, and
+handle metadata associated with the audio data.
 """
 
 import os
