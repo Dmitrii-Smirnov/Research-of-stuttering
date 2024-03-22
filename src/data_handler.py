@@ -2,34 +2,38 @@
 DataHandler.py
 
 This module contains the DataHandler class, which is responsible for loading and preprocessing audio data and
-metadata for the SEP-28k dataset.
+metadata for the SEP-28k dataset. The class provides functionality to read audio files, process audio clips, and
+handle metadata associated with the audio data.
 """
 
 import os
-import json
 import librosa
-import numpy as np
 import pandas as pd
 from typing import Tuple
 import concurrent.futures
 
-
 class DataHandler:
-    """
-    A class for handling the loading and preprocessing of audio data and metadata for the SEP-28k dataset.
-    """
-
-    def __init__(self, data_directory: str, labels_metadata_path: str):
+    def __init__(self, metadata_path: str, audio_clips_directory: str, original_audio_directory: str):
         """
         Initializes the DataHandler object.
 
         Args:
-            data_directory (str): Path to the directory containing audio files.
-            labels_metadata_path (str): Path to the CSV file containing labels metadata.
+            metadata_path (str): Path to the CSV file containing labels metadata.
+            audio_clips_directory (str): Path to the directory containing audio clips.
+            original_audio_directory (str): Path to the directory containing original audio files.
         """
-        self.data_directory = data_directory
-        self.labels_metadata_path = labels_metadata_path
-        self.labels_metadata = None
+        self.metadata_path = metadata_path
+        self.audio_clips_directory = audio_clips_directory
+        self.original_audio_directory = original_audio_directory
+        self.metadata_df = None
+        self.audio_clips_df = None
+        self.original_audio_df = None
+
+    def load_metadata(self):
+        """
+        Loads the metadata from the CSV file into a pandas DataFrame.
+        """
+        self.metadata_df = pd.read_csv(self.metadata_path)
 
     def _read_audio_file(self, file_path: str) -> Tuple[str, bytes]:
         """
@@ -48,34 +52,70 @@ class DataHandler:
             print(f"Error loading {file_path}: {e}")
             return None, None
 
-    def load_metadata(self):
+    def process_audio_clips(self):
         """
-        Loads the metadata from the CSV file into a pandas DataFrame.
+        Processes audio clips and creates a DataFrame with metadata and audio data using parallel processing.
         """
-        self.labels_metadata = pd.read_csv(self.labels_metadata_path)
 
-    def load_audio_files(self):
-        """
-        Recursively loads audio files listed in the labels metadata and updates the DataFrame with
-        the audio data using parallel processing.
-        """
-        audio_file_paths = {}
-        for root, dirs, files in os.walk(self.data_directory):
-            for file in files:
-                if file.endswith('.wav'):
-                    audio_file_paths[file] = os.path.join(root, file)
-
-        def process_audio_file(index, row):
-            file_name = f"{row['Show']}_{row['EpId']}_{row['ClipId']}.wav"
-            if file_name in audio_file_paths:
-                y, sr = self._read_audio_file(audio_file_paths[file_name])
-                return index, json.dumps(np.array(y).tolist()), sr
-            return index, None, None
+        def process_clip(show, ep_id, clip_id):
+            file_name = f"{show}_{ep_id}_{clip_id}.wav"
+            file_path = os.path.join(self.audio_clips_directory, show, str(ep_id), file_name)
+            if os.path.exists(file_path):
+                y, sr = self._read_audio_file(file_path)
+            else:
+                y, sr = None, None
+            return {
+                'Show': show,
+                'EpId': ep_id,
+                'ClipId': clip_id,
+                'AudioData': y,
+                'SamplingRate': sr
+            }
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-            futures = [executor.submit(process_audio_file, index, row)
-                       for index, row in self.labels_metadata.iterrows()]
-            for future in concurrent.futures.as_completed(futures):
-                index, audio_data, sr = future.result()
-                self.labels_metadata.at[index, 'ClipsAudioData'] = audio_data
-                self.labels_metadata.at[index, 'ClipsSamplingRate'] = sr
+            futures = [executor.submit(process_clip, row.Show, row.EpId, row.ClipId)
+                       for row in self.metadata_df.itertuples(index=False)]
+            self.audio_clips_df = pd.DataFrame([future.result() for future in concurrent.futures.as_completed(futures)])
+
+    def process_original_audio(self):
+        """
+        Processes original audio files and creates a DataFrame with unique Show, EpId,
+        and processed audio data using parallel processing.
+        """
+        unique_shows = self.metadata_df[['Show', 'EpId']].drop_duplicates()
+
+        def process_original(show, ep_id):
+            file_name = f"{ep_id}.wav"
+            file_path = os.path.join(self.original_audio_directory, show, file_name)
+            if os.path.exists(file_path):
+                y, sr = self._read_audio_file(file_path)
+            else:
+                y, sr = None, None
+            return {
+                'Show': show,
+                'EpId': ep_id,
+                'AudioData': y,
+                'AudioSamplingRate': sr
+            }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+            futures = [executor.submit(process_original, row.Show, row.EpId)
+                       for row in unique_shows.itertuples(index=False)]
+            self.original_audio_df = pd.DataFrame([future.result() for future in concurrent.futures.as_completed(futures
+                                                                                                                 )])
+
+
+# Example usage
+# data_handler = DataHandler(
+#     metadata_path='path/to/metadata.csv',
+#     audio_clips_directory='path/to/audio_clips',
+#     original_audio_directory='path/to/original_audio'
+# )
+# data_handler.load_metadata()
+# data_handler.process_audio_clips()
+# data_handler.process_original_audio()
+#
+# # Access the DataFrames
+# metadata_df = data_handler.metadata_df
+# audio_clips_df = data_handler.audio_clips_df
+# original_audio_df = data_handler.original_audio_df

@@ -18,26 +18,56 @@ Architecture with OOP and Parallel Processing:
 6. MainApp Class (main_app.py):
     * This is the main entry point of the application that uses instances of other classes to load data, preprocess it, analyze it, and handle results.
 
-Folders and Files:
+Architecture of the program:
 
-- /data/ - This directory will hold all the raw audio files and metadata.
-- /preprocessed_data/ - A dedicated directory for storing intermediate data after preprocessing.
-- /models/ - Directory to store serialized models or any model-related data.
-- /results/ - Directory for saving output like CSV files, images of plots, etc.
-- /src/ - This directory will contain all your Python class files.
-    - /src/data_handler.py
-    - /src/preprocessor.py
-    - /src/models/
-        - /src/models/model.py - base model class
-        - /src/models/svm_model.py - SVM specific class
-        - /src/models/tree_model.py - Decision Tree specific class
-    - /src/analyzer.py
-    - /src/results_handler.py
-    - /src/main_app.py
-- /logs/ - Directory for log files.
-- /utils/ - Additional utility functions that can be used across classes.
+Project Root Directory
+│
+├── /data/
+│   ├── audio_files/
+│   └── metadata.csv
+│
+├── /preprocessed_data/
+│   ├── processed_audio_clips.csv
+│   └── processed_original_audio.csv
+│
+├── /models/
+│   ├── model.pkl
+│   └── /src/
+│       ├── model.py
+│       ├── svm_model.py
+│       └── tree_model.py
+│
+├── /results/
+│   ├── analysis_results.csv
+│   └── plots/
+│       ├── time_series_plot.png
+│       └── interactive_plot.html
+│
+├── /src/
+│   ├── data_handler.py
+│   ├── preprocessor.py
+│   ├── analyzer.py
+│   ├── results_handler.py
+│   └── main_app.py
+│
+├── /visualizations/
+│   ├── plotter.py
+│   └── interactive_visualizations.py
+│
+├── /logs/
+│   └── application.log
+│
+└── /utils/
+    └── helper_functions.py
 
-Execution Flow:
-The MainApp class would coordinate the flow of the program, ensuring that each component does its part.
-It might manage threads or processes for parallel execution and would ensure that all pieces come together
-to form the final output.
+In this structure:
+
+/data/: Contains raw audio files and metadata.
+/preprocessed_data/: Stores data after preprocessing.
+/models/: Holds serialized models and model-related classes.
+/results/: Directory for saving output like CSV files, and images or HTML files for plots.
+/src/: Contains all Python class files for data handling, preprocessing, modeling, analysis, and results handling.
+/visualizations/: New directory for storing visualization scripts and output images or interactive plots.
+/logs/: Directory for log files.
+/utils/: Contains additional utility functions.
+The MainApp class in main_app.py would coordinate the flow of the program, managing the execution of different components and ensuring that the final output is produced. It can also handle parallel execution if needed.
