@@ -1,0 +1,43 @@
+Architecture with OOP and Parallel Processing:
+
+1. DataHandler Class (data_handler.py):
+    * Methods for reading audio and metadata from the dataset.
+    * Parallel processing can be used here to speed up the reading of data from multiple files.
+2. Preprocessor Class (preprocessor.py):
+    * Methods for audio signal preprocessing, such as noise reduction and normalization.
+    * Feature extraction methods that can be parallelized to process multiple audio clips simultaneously.
+3. Model Class (model.py):
+    * Base class for all models with common methods like fit, predict, and score.
+    * Derived classes for each machine learning model you'll use (e.g., SVMModel, DecisionTreeModel).
+4. Analyzer Class (analyzer.py):
+    * Takes instances of Model classes and applies them to the dataset.
+    * Uses parallel processing to apply models to different partitions of the data.
+5. ResultsHandler Class (results_handler.py):
+    * Methods for saving results, generating visualizations, and exporting reports.
+    * Could use parallel processing for generating multiple visualizations at once.
+6. MainApp Class (main_app.py):
+    * This is the main entry point of the application that uses instances of other classes to load data, preprocess it, analyze it, and handle results.
+
+Folders and Files:
+
+- /data/ - This directory will hold all the raw audio files and metadata.
+- /preprocessed_data/ - A dedicated directory for storing intermediate data after preprocessing.
+- /models/ - Directory to store serialized models or any model-related data.
+- /results/ - Directory for saving output like CSV files, images of plots, etc.
+- /src/ - This directory will contain all your Python class files.
+    - /src/data_handler.py
+    - /src/preprocessor.py
+    - /src/models/
+        - /src/models/model.py - base model class
+        - /src/models/svm_model.py - SVM specific class
+        - /src/models/tree_model.py - Decision Tree specific class
+    - /src/analyzer.py
+    - /src/results_handler.py
+    - /src/main_app.py
+- /logs/ - Directory for log files.
+- /utils/ - Additional utility functions that can be used across classes.
+
+Execution Flow:
+The MainApp class would coordinate the flow of the program, ensuring that each component does its part.
+It might manage threads or processes for parallel execution and would ensure that all pieces come together
+to form the final output.
